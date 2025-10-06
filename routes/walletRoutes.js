@@ -7,7 +7,7 @@ import {
 
 const router = express.Router();
 
-// POST /api/wallets/create
+// POST /api/wallets/
 router.post("/create", createRandomWallets);
 router.post("/create-hd", createHDWallets);
 router.post("/add-funds", addFundsToAccounts);

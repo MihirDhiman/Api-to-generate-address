@@ -1,4 +1,4 @@
-import { Wallet, JsonRpcProvider, parseEther } from "ethers";
+import { Wallet } from "ethers";
 const hdWalletsStorage = [];
 export const createRandomWallets = async (req, res) => {
   try {
@@ -34,7 +34,7 @@ export const createHDWallets = async (req, res) => {
       path = "m/44'/60'/0'/0",
       startIndex = 0,
       includePrivate = true,
-      balance=0
+      balance = 0,
     } = req.body || {};
 
     const n = Math.max(1, Math.min(1000, parseInt(count, 10) || 1));
