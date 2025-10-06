@@ -2,7 +2,7 @@ import express from "express";
 import {
   createRandomWallets,
   createHDWallets,
-  addFundsToWallet,
+  addFundsToAccounts,
 } from "../controllers/walletController.js";
 
 const router = express.Router();
@@ -10,6 +10,6 @@ const router = express.Router();
 // POST /api/wallets/create
 router.post("/create", createRandomWallets);
 router.post("/create-hd", createHDWallets);
-router.post("/add-funds", addFundsToWallet);
+router.post("/add-funds", addFundsToAccounts);
 
 export default router;

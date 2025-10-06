@@ -1,5 +1,5 @@
 import { Wallet, JsonRpcProvider, parseEther } from "ethers";
-
+const hdWalletsStorage = [];
 export const createRandomWallets = async (req, res) => {
   try {
     const { count = 1, includePrivate = true } = req.body || {};
@@ -34,6 +34,7 @@ export const createHDWallets = async (req, res) => {
       path = "m/44'/60'/0'/0",
       startIndex = 0,
       includePrivate = true,
+      balance=0
     } = req.body || {};
 
     const n = Math.max(1, Math.min(1000, parseInt(count, 10) || 1));
@@ -50,12 +51,15 @@ export const createHDWallets = async (req, res) => {
       const index = start + i;
       const fullPath = `${path}/${index}`;
       const wallet = Wallet.fromPhrase(mnemonic, fullPath);
-      results.push({
+      const walletData = {
         index,
         derivationPath: fullPath,
         address: wallet.address,
         privateKey: includePriv ? wallet.privateKey : undefined,
-      });
+        balance,
+      };
+      results.push(walletData);
+      hdWalletsStorage.push(walletData);
     }
     return res.json({
       mode: "hd",
@@ -71,16 +75,16 @@ export const createHDWallets = async (req, res) => {
   }
 };
 
-export const addFundsToWallet = async (req, res) => {
+export const addFundsToAccounts = async (req, res) => {
   try {
-    const { wallets = [], amount = 0 } = req.body;
+    const { amount = 0 } = req.body;
 
-    if (!Array.isArray(wallets) || wallets.length === 0) {
-      return res.status(400).json({ error: "No wallets provided" });
+    if (hdWalletsStorage.length === 0) {
+      return res.status(400).json({ error: "No wallets available to fund" });
     }
 
-    const results = wallets.map((wallet) => {
-      wallet.balance = (wallet.balance || 0) + Number(amount); // add funds
+    const results = hdWalletsStorage.map((wallet) => {
+      wallet.balance += Number(amount); // add funds
       return {
         address: wallet.address,
         balance: wallet.balance,
