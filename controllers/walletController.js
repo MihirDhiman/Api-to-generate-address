@@ -1,4 +1,4 @@
-import { Wallet, HDNodeWallet, Mnemonic } from "ethers";
+import { Wallet, JsonRpcProvider, parseEther } from "ethers";
 
 export const createRandomWallets = async (req, res) => {
   try {
@@ -29,7 +29,6 @@ export const createRandomWallets = async (req, res) => {
 
 export const createHDWallets = async (req, res) => {
   try {
-    
     const {
       count = 1,
       path = "m/44'/60'/0'/0",
@@ -41,16 +40,16 @@ export const createHDWallets = async (req, res) => {
     const start = parseInt(startIndex, 10) || 0;
     const includePriv = Boolean(includePrivate);
 
-    // Generate a new random wallet (which includes a mnemonic)
+    // random wallet (which includes a mnemonic)
     const randomWallet = Wallet.createRandom();
     const mnemonic = randomWallet.mnemonic.phrase;
 
-    // Generate derived wallets
+    // Generate derived accounts
     const results = [];
     for (let i = 0; i < n; i++) {
       const index = start + i;
       const fullPath = `${path}/${index}`;
-      const wallet = Wallet.fromPhrase(mnemonic, fullPath); 
+      const wallet = Wallet.fromPhrase(mnemonic, fullPath);
       results.push({
         index,
         derivationPath: fullPath,
@@ -69,5 +68,33 @@ export const createHDWallets = async (req, res) => {
   } catch (error) {
     console.error("createHDWallets error:", error);
     return res.status(500).json({ error: error.message });
+  }
+};
+
+export const addFundsToWallet = async (req, res) => {
+  try {
+    const { wallets = [], amount = 0 } = req.body;
+
+    if (!Array.isArray(wallets) || wallets.length === 0) {
+      return res.status(400).json({ error: "No wallets provided" });
+    }
+
+    const results = wallets.map((wallet) => {
+      wallet.balance = (wallet.balance || 0) + Number(amount); // add funds
+      return {
+        address: wallet.address,
+        balance: wallet.balance,
+        added: Number(amount),
+      };
+    });
+
+    return res.json({
+      message: "Funds added successfully (simulated)",
+      fundedCount: results.length,
+      results,
+    });
+  } catch (error) {
+    console.error("addFundsToWallet error:", error);
+    res.status(500).json({ error: error.message });
   }
 };
