@@ -1,6 +1,6 @@
-import { Wallet } from "ethers";
+import { Wallet, HDNodeWallet, Mnemonic } from "ethers";
 const hdWalletsStorage = [];
-export const createRandomWallets = async (req, res) => {
+export const createRandomAccounts = async (req, res) => {
   try {
     const { count = 1, includePrivate = true } = req.body || {};
     const n = Math.max(1, Math.min(1000, parseInt(count, 10) || 1));
@@ -27,7 +27,7 @@ export const createRandomWallets = async (req, res) => {
   }
 };
 
-export const createHDWallets = async (req, res) => {
+export const createHDAccounts = async (req, res) => {
   try {
     const {
       count = 1,
@@ -42,15 +42,16 @@ export const createHDWallets = async (req, res) => {
     const includePriv = Boolean(includePrivate);
 
     // random wallet (which includes a mnemonic)
-    const randomWallet = Wallet.createRandom();
+    const randomWallet = HDNodeWallet.createRandom();
     const mnemonic = randomWallet.mnemonic.phrase;
-
+    const mnemonicInstance = Mnemonic.fromPhrase(mnemonic);
     // Generate derived accounts
     const results = [];
     for (let i = 0; i < n; i++) {
       const index = start + i;
       const fullPath = `${path}/${index}`;
-      const wallet = Wallet.fromPhrase(mnemonic, fullPath);
+
+      const wallet = HDNodeWallet.fromMnemonic(mnemonicInstance, fullPath);
       const walletData = {
         index,
         derivationPath: fullPath,
@@ -99,6 +100,54 @@ export const addFundsToAccounts = async (req, res) => {
     });
   } catch (error) {
     console.error("addFundsToWallet error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const transferFunds = async (req, res) => {
+  try {
+    const { fromAddress, toAddress, amount } = req.body;
+
+    if (!fromAddress || !toAddress || !amount) {
+      return res
+        .status(400)
+        .json({ error: "fromAddress, toAddress, and amount are required" });
+    }
+
+    if (fromAddress === toAddress) {
+      return res
+        .status(400)
+        .json({ error: "Cannot transfer to the same wallet" });
+    }
+
+    // Find the account
+    const fromWallet = hdWalletsStorage.find((w) => w.address === fromAddress);
+    const toWallet = hdWalletsStorage.find((w) => w.address === toAddress);
+
+    if (!fromWallet || !toWallet) {
+      return res.status(404).json({ error: "Wallet not found" });
+    }
+
+    const transferAmount = Number(amount);
+
+    if (fromWallet.balance < transferAmount) {
+      return res
+        .status(400)
+        .json({ error: "Insufficient balance in sender wallet" });
+    }
+
+    // Transfer balance
+    fromWallet.balance -= transferAmount;
+    toWallet.balance += transferAmount;
+
+    return res.json({
+      message: "Transfer successful",
+      from: { address: fromWallet.address, balance: fromWallet.balance },
+      to: { address: toWallet.address, balance: toWallet.balance },
+      transferred: transferAmount,
+    });
+  } catch (error) {
+    console.error("transferFunds error:", error);
     res.status(500).json({ error: error.message });
   }
 };
