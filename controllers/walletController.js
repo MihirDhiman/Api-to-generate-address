@@ -1,5 +1,5 @@
 import { Wallet, HDNodeWallet, Mnemonic } from "ethers";
-const hdWalletsStorage = [];
+const accountStorage = [];
 export const createRandomAccounts = async (req, res) => {
   try {
     const { count = 1, includePrivate = true } = req.body || {};
@@ -60,7 +60,7 @@ export const createHDAccounts = async (req, res) => {
         balance,
       };
       results.push(walletData);
-      hdWalletsStorage.push(walletData);
+      accountStorage.push(walletData);
     }
     return res.json({
       mode: "hd",
@@ -80,11 +80,11 @@ export const addFundsToAccounts = async (req, res) => {
   try {
     const { amount = 0 } = req.body;
 
-    if (hdWalletsStorage.length === 0) {
+    if (accountStorage.length === 0) {
       return res.status(400).json({ error: "No wallets available to fund" });
     }
 
-    const results = hdWalletsStorage.map((wallet) => {
+    const results = accountStorage.map((wallet) => {
       wallet.balance += Number(amount); // add funds
       return {
         address: wallet.address,
@@ -121,8 +121,8 @@ export const transferFunds = async (req, res) => {
     }
 
     // Find the account
-    const fromWallet = hdWalletsStorage.find((w) => w.address === fromAddress);
-    const toWallet = hdWalletsStorage.find((w) => w.address === toAddress);
+    const fromWallet = accountStorage.find((w) => w.address === fromAddress);
+    const toWallet = accountStorage.find((w) => w.address === toAddress);
 
     if (!fromWallet || !toWallet) {
       return res.status(404).json({ error: "Wallet not found" });
